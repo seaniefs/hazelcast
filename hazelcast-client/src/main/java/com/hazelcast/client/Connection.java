@@ -40,12 +40,12 @@ public class Connection {
     boolean headersWritten = false;
     boolean headerRead = false;
 
-    public Connection(int timeout, InetSocketAddress address, int id) {
+    public Connection(ClientConfig clientConfig, int timeout, InetSocketAddress address, int id) {
         this.id = id;
         this.address = address;
         try {
             final InetSocketAddress isa = new InetSocketAddress(address.getAddress(), address.getPort());
-            final Socket socket = new Socket();
+            final Socket socket = createSocket(clientConfig);
             try {
                 socket.setKeepAlive(true);
 //                socket.setTcpNoDelay(true);
@@ -68,6 +68,18 @@ public class Connection {
         }
     }
 
+    protected Socket createSocket(ClientConfig clientConfig) throws IOException {
+    	Socket outputSocket = null;
+    	ClientSocketFactory clientSocketFactory = clientConfig.getClientSocketFactory();
+    	if(clientSocketFactory != null) {
+    		outputSocket = clientSocketFactory.createSocket();
+    	}
+    	else {
+    		outputSocket = new Socket();
+    	}
+    	return outputSocket;
+    }
+    
     public Socket getSocket() {
         return socket;
     }

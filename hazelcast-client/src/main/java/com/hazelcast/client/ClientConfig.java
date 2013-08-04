@@ -35,6 +35,7 @@ public class ClientConfig {
     private boolean shuffle = false;
     private boolean updateAutomatic = true;
     private SocketInterceptor socketInterceptor = null;
+    private ClientSocketFactory clientSocketFactory = null;
     private final Collection<EventListener> listeners = new HashSet<EventListener>();
 
     public SocketInterceptor getSocketInterceptor() {
@@ -150,7 +151,15 @@ public class ClientConfig {
         return listeners;
     }
 
-    /**
+    public ClientSocketFactory getClientSocketFactory() {
+		return clientSocketFactory;
+	}
+
+	public void setClientSocketFactory(ClientSocketFactory clientSocketFactory) {
+		this.clientSocketFactory = clientSocketFactory;
+	}
+
+	/**
      * Adds a listener object to configuration to be registered when {@code HazelcastClient} starts.
      * @param listener one of {@link com.hazelcast.core.LifecycleListener}, {@link com.hazelcast.core.InstanceListener}
      *                 or {@link com.hazelcast.core.MembershipListener}

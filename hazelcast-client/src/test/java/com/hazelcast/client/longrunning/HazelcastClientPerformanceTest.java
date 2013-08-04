@@ -25,6 +25,8 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -168,9 +170,18 @@ public class HazelcastClientPerformanceTest extends HazelcastClientTestBase {
             }
         }).start();
         HazelcastClient client = mock(HazelcastClient.class);
+        ClientConfig mockConfig = mock(ClientConfig.class);
+        ClientSocketFactory mockClientSocketFactory = mock(ClientSocketFactory.class);
         ConnectionManager connectionManager = mock(ConnectionManager.class);
         when(client.getConnectionManager()).thenReturn(connectionManager);
-        Connection connection = new Connection(3, new InetSocketAddress("localhost", 5799), 1);
+        when(mockConfig.getClientSocketFactory()).thenReturn(mockClientSocketFactory);
+        when(mockClientSocketFactory.createSocket()).thenAnswer(new Answer<Socket>() {
+
+			public Socket answer(InvocationOnMock invocation) throws Throwable {
+				return new Socket();
+			}
+		});
+        Connection connection = new Connection(mockConfig, 3, new InetSocketAddress("localhost", 5799), 1);
         when(connectionManager.getConnection()).thenReturn(connection);
         PacketWriter packetWriter = new PacketWriter();
         packetWriter.setConnection(connection);

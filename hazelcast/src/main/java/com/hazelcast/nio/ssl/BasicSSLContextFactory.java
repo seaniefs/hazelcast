@@ -16,12 +16,19 @@
 
 package com.hazelcast.nio.ssl;
 
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.security.KeyStore;
+import java.security.NoSuchAlgorithmException;
+import java.security.cert.CertificateException;
+import java.util.Properties;
+
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManagerFactory;
-import java.io.FileInputStream;
-import java.security.KeyStore;
-import java.util.Properties;
+
+import com.hazelcast.nio.IOUtil;
 
 public class BasicSSLContextFactory implements SSLContextFactory {
     SSLContext sslContext;
@@ -48,14 +55,23 @@ public class BasicSSLContextFactory implements SSLContextFactory {
         String protocol = getProperty(properties, "protocol", "TLS");
         final char[] passPhrase = keyStorePassword.toCharArray();
         final String keyStoreFile = keyStore;
-        ks.load(new FileInputStream(keyStoreFile), passPhrase);
-        ts.load(new FileInputStream(keyStoreFile), passPhrase);
+        loadKeyStore(ks, passPhrase, keyStoreFile);
+        loadKeyStore(ts, passPhrase, keyStoreFile);
         KeyManagerFactory kmf = KeyManagerFactory.getInstance(keyManagerAlgorithm);
         kmf.init(ks, passPhrase);
         TrustManagerFactory tmf = TrustManagerFactory.getInstance(trustManagerAlgorithm);
         tmf.init(ts);
         sslContext = SSLContext.getInstance(protocol);
         sslContext.init(kmf.getKeyManagers(), tmf.getTrustManagers(), null);
+    }
+
+    protected void loadKeyStore(KeyStore ks, char[] passPhrase, String keyStoreFile) throws IOException, NoSuchAlgorithmException, CertificateException {
+        final InputStream in = new FileInputStream(keyStoreFile);
+        try {
+            ks.load(in, passPhrase);
+        } finally {
+            IOUtil.closeResource(in);
+        }
     }
 
     private static String getProperty(Properties properties, String propertyName, String defaultValue) {
