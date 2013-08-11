@@ -16,19 +16,21 @@
 
 package com.hazelcast.client.connection;
 
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
+import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.net.Socket;
+
+import com.hazelcast.client.config.ClientSocketFactoryOptions;
 import com.hazelcast.client.config.SocketOptions;
+import com.hazelcast.client.spi.ClientSocketFactory;
 import com.hazelcast.nio.Address;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.ObjectDataInputStream;
 import com.hazelcast.nio.serialization.ObjectDataOutputStream;
 import com.hazelcast.nio.serialization.SerializationService;
 import com.hazelcast.util.Clock;
-
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
-import java.io.IOException;
-import java.net.InetSocketAddress;
-import java.net.Socket;
 
 /**
  * Holds the socket to one of the members of Hazelcast Cluster.
@@ -53,7 +55,7 @@ final class ConnectionImpl implements Connection {
 
     public ConnectionImpl(Address address, SocketOptions options, SerializationService serializationService) throws IOException {
         final InetSocketAddress isa = address.getInetSocketAddress();
-        final Socket socket = new Socket();
+        final Socket socket = createSocket(options);
         try {
             socket.setKeepAlive(options.isSocketKeepAlive());
             socket.setTcpNoDelay(options.isSocketTcpNoDelay());
@@ -71,7 +73,7 @@ final class ConnectionImpl implements Connection {
             socket.setSendBufferSize(bufferSize);
             socket.setReceiveBufferSize(bufferSize);
             socket.connect(isa, 3000);
-
+            postConnectSocket(socket, options);
             this.socket = socket;
             out = serializationService.createObjectDataOutputStream(
                     new BufferedOutputStream(socket.getOutputStream(), bufferSize));
@@ -83,6 +85,23 @@ final class ConnectionImpl implements Connection {
             throw e;
         }
     }
+
+	private Socket createSocket(SocketOptions options) throws IOException {
+
+		Socket socket = null;
+		ClientSocketFactoryOptions clientSocketFactoryOptions = options.getClientSocketFactoryOptions();
+		ClientSocketFactory clientSocketFactoryImplementation = clientSocketFactoryOptions.getClientSocketFactoryImplementation();
+		
+		socket = clientSocketFactoryImplementation.createSocket();
+
+		return socket;
+	}
+
+	private void postConnectSocket(Socket socket, SocketOptions options) throws IOException {
+		ClientSocketFactoryOptions clientSocketFactoryOptions = options.getClientSocketFactoryOptions();
+		ClientSocketFactory clientSocketFactoryImplementation = clientSocketFactoryOptions.getClientSocketFactoryImplementation();
+		clientSocketFactoryImplementation.postConnectSocket(socket);
+	}
 
     Socket getSocket() {
         return socket;

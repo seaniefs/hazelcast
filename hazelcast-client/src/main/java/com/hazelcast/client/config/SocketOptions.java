@@ -35,6 +35,7 @@ public class SocketOptions {
 
     private int socketBufferSize = 32; // in kb
 
+    private ClientSocketFactoryOptions clientSocketFactoryOptions = new ClientSocketFactoryOptions();
 
     public boolean isSocketTcpNoDelay() {
         return socketTcpNoDelay;
@@ -83,4 +84,13 @@ public class SocketOptions {
     public void setSocketBufferSize(int socketBufferSize) {
         this.socketBufferSize = socketBufferSize;
     }
+
+	public ClientSocketFactoryOptions getClientSocketFactoryOptions() {
+		return clientSocketFactoryOptions;
+	}
+
+	public void setClientSocketFactoryOptions(ClientSocketFactoryOptions clientSocketFactoryOptions) {
+		this.clientSocketFactoryOptions = clientSocketFactoryOptions;
+	}
+    
 }

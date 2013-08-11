@@ -17,6 +17,8 @@
 package com.hazelcast.client.config;
 
 import com.hazelcast.client.spi.ClientProxyFactory;
+import com.hazelcast.client.spi.ClientSocketFactory;
+import com.hazelcast.client.spi.impl.DefaultClientSocketFactory;
 import com.hazelcast.client.util.RandomLB;
 import com.hazelcast.client.util.RoundRobinLB;
 import com.hazelcast.config.*;
@@ -38,6 +40,7 @@ import java.io.InputStream;
 import java.net.URL;
 import java.nio.ByteOrder;
 import java.util.EventListener;
+import java.util.Properties;
 import java.util.logging.Level;
 
 public class XmlClientConfigBuilder extends AbstractXmlConfigHelper {
@@ -214,7 +217,7 @@ public class XmlClientConfigBuilder extends AbstractXmlConfigHelper {
         }
     }
 
-    private void handleNetwork(Node node) {
+    private void handleNetwork(Node node) throws Exception {
         for (Node child : new IterableNodeList(node.getChildNodes())) {
             final String nodeName = cleanNodeName(child);
             if ("cluster-members".equals(nodeName)) {
@@ -237,7 +240,7 @@ public class XmlClientConfigBuilder extends AbstractXmlConfigHelper {
         }
     }
 
-    private void handleSocketOptions(Node node) {
+    private void handleSocketOptions(Node node) throws Exception {
         SocketOptions socketOptions = clientConfig.getSocketOptions();
         for (Node child : new IterableNodeList(node.getChildNodes())) {
             final String nodeName = cleanNodeName(child);
@@ -253,8 +256,46 @@ public class XmlClientConfigBuilder extends AbstractXmlConfigHelper {
                 socketOptions.setSocketTimeout(Integer.parseInt(getTextContent(child)));
             } else if ("buffer-size".equals(nodeName)) {
                 socketOptions.setSocketBufferSize(Integer.parseInt(getTextContent(child)));
+	        } else if ("socket-factory".equals(nodeName)) {
+	            handleClientSocketFactoryOptions(child);
+	        }
+        }
+    }
+
+    private void handleClientSocketFactoryOptions(Node node) throws Exception {
+        ClientSocketFactoryOptions clientSocketFactoryOptions = clientConfig.getSocketOptions().getClientSocketFactoryOptions();
+        Properties properties = clientSocketFactoryOptions.getProperties();
+        String factoryClassName = getAttribute(node, "factory-class");
+        if(factoryClassName == null || factoryClassName.isEmpty()) {
+        	factoryClassName = DefaultClientSocketFactory.class.getName();
+        }
+        clientSocketFactoryOptions.setFactoryClassName(factoryClassName);
+	    parseProperties(node, properties);
+        handleClientSocketFactoryInstantiation(clientSocketFactoryOptions);
+    }
+
+	private void parseProperties(Node node, Properties properties) {
+		for (Node child : new IterableNodeList(node.getChildNodes())) {
+            final String nodeName = cleanNodeName(child);
+            if ("property".equals(nodeName)) {
+            	String propName = getAttribute(child, "name");
+        		String propValue = getAttribute(child, "value");
+            	if(propName != null && propValue != null) {
+					properties.put(propName, propValue);
+            	}
             }
         }
+	}
+
+    @SuppressWarnings("unchecked")
+    private void handleClientSocketFactoryInstantiation(ClientSocketFactoryOptions clientSocketFactoryOptions) throws Exception {
+    	String factoryClassName = clientSocketFactoryOptions.getFactoryClassName();
+        ClassLoader classLoader = clientConfig.getClassLoader();
+        Class<? extends ClientSocketFactory> factoryClass;
+        factoryClass = (Class<? extends ClientSocketFactory>) classLoader.loadClass(factoryClassName);
+        ClientSocketFactory factory = factoryClass.newInstance();
+        factory.init(clientSocketFactoryOptions.getProperties());
+        clientConfig.getSocketOptions().getClientSocketFactoryOptions().setClientSocketFactory(factory);
     }
 
     private void handleClusterMembers(Node node) {

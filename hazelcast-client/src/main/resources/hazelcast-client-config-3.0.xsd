@@ -352,9 +352,37 @@
                 <xs:element ref="linger-seconds" minOccurs="0" maxOccurs="1" />
                 <xs:element ref="timeout" minOccurs="0" maxOccurs="1" />
                 <xs:element ref="buffer-size" minOccurs="0" maxOccurs="1" />
+                <xs:element ref="socket-factory" minOccurs="0" maxOccurs="1" />
             </xs:sequence>
         </xs:complexType>
     </xs:element>
+
+    <xs:element name="socket-factory">
+	    <xs:complexType>
+	        <xs:sequence minOccurs="0" maxOccurs="1">
+	        	<xs:element ref="property" minOccurs="0" maxOccurs="unbounded"/>
+	        </xs:sequence>
+	        <xs:attribute name="factory-class" use="required">
+	            <xs:simpleType>
+	                <xs:restriction base="xs:string"/>
+	            </xs:simpleType>
+	        </xs:attribute>
+	    </xs:complexType>
+	</xs:element>
+    <xs:element name="property">
+	    <xs:complexType>
+        	<xs:attribute name="name" use="required">
+	            <xs:simpleType>
+	                <xs:restriction base="xs:string"/>
+	            </xs:simpleType>
+        	</xs:attribute>
+        	<xs:attribute name="value" use="required">
+	            <xs:simpleType>
+	                <xs:restriction base="xs:string"/>
+	            </xs:simpleType>
+        	</xs:attribute>
+        </xs:complexType>
+	</xs:element>
     <xs:simpleType name="eviction-policy">
         <xs:restriction base="xs:string">
             <xs:enumeration value="NONE"/>

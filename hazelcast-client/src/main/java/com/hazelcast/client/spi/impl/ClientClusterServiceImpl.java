@@ -267,7 +267,7 @@ public final class ClientClusterServiceImpl implements ClientClusterService {
     public void start() {
         final Future<Connection> f = client.getClientExecutionService().submit(new InitialConnectionCall());
         try {
-            final Connection connection = f.get(30, TimeUnit.SECONDS);
+            final Connection connection = f.get(60, TimeUnit.SECONDS);
             clusterThread.setInitialConn(connection);
         } catch (Throwable e) {
             if (e instanceof ExecutionException && e.getCause() != null) {
