@@ -503,7 +503,7 @@ public class EvictionTest extends HazelcastTestSupport {
         for (int i = 0; i < size; i++) {
             map.put(i, i);
         }
-        assertTrue(latch.await(1, TimeUnit.MINUTES));
+        assertTrue(latch.await(5, TimeUnit.MINUTES));
         assertEquals(0, map.size());
     }
 
@@ -666,6 +666,27 @@ public class EvictionTest extends HazelcastTestSupport {
         assertTrue(latch.await(1, TimeUnit.MINUTES));
         assertFalse("Some evictions took more than 3 seconds! -> " + times, error.get());
     }
+
+    /**
+     * Test for issue 614
+     * @throws InterruptedException
+     */
+    @Test
+    public void testContainsKeyShouldDelayEviction() throws InterruptedException {
+        Config cfg = new Config();
+        String mapname = "testContainsKeyShouldDelayEviction";
+        cfg.getMapConfig(mapname).setMaxIdleSeconds(3);
+        TestHazelcastInstanceFactory factory = createHazelcastInstanceFactory(1);
+        HazelcastInstance instance = factory.newHazelcastInstance(cfg);
+        IMap<Object, Object> map = instance.getMap(mapname);
+        map.put(1, 1);
+        for (int i = 0; i < 10; i++) {
+            map.containsKey(1);
+            assertEquals(1, map.size());
+            Thread.sleep(1000);
+        }
+    }
+
 
     /**
      * Test for the issue 537.

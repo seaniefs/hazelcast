@@ -38,7 +38,6 @@ import com.hazelcast.util.ConstructorFunction;
 import java.io.IOException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.logging.Level;
 
 public class SmartClientConnectionManager implements ClientConnectionManager {
 
@@ -106,11 +105,16 @@ public class SmartClientConnectionManager implements ClientConnectionManager {
         try {
             connection = pool.take();
         } catch (Exception e) {
-            logger.log(Level.WARNING, "Error during connection creation...", e);
+            if (logger.isFinestEnabled()) {
+                logger.warning("Error during connection creation... To -> " + address, e);
+            } else {
+                logger.warning("Error during connection creation... To -> " + address + ", Error: " + e.toString());
+            }
         }
         // Could be that this address is dead and that's why pool is not able to create and give a connection.
         // We will call it again, and hopefully at some time LoadBalancer will give us the right target for the connection.
         if (connection != null && !heartbeat.checkHeartBeat(connection)) {
+            logger.warning(connection + " failed to heartbeat, closing...");
             connection.close();
             connection = null;
         }
@@ -176,6 +180,7 @@ public class SmartClientConnectionManager implements ClientConnectionManager {
         }
 
         public void close() {
+            logger.info("Closing connection -> " + connection);
             IOUtil.closeResource(connection);
         }
 

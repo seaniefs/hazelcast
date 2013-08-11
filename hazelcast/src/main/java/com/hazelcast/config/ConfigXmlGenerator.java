@@ -90,8 +90,9 @@ public class ConfigXmlGenerator {
         if (netCfg.getPublicAddress() != null) {
             xml.append("<public-address>").append(netCfg.getPublicAddress()).append("</public-address>");
         }
-        xml.append("<port auto-increment=\"").append(config.getNetworkConfig().isPortAutoIncrement()).append("\">")
-                .append(config.getNetworkConfig().getPort()).append("</port>");
+        xml.append("<port port-count=\"").append(netCfg.getPortCount()).append("\" ")
+                .append("auto-increment=\"").append(netCfg.isPortAutoIncrement()).append("\">")
+                .append(netCfg.getPort()).append("</port>");
         final JoinConfig join = netCfg.getJoin();
         xml.append("<join>");
         final MulticastConfig mcast = join.getMulticastConfig();
@@ -166,7 +167,7 @@ public class ConfigXmlGenerator {
         xml.append("</network>");
 
         final PartitionGroupConfig pg = config.getPartitionGroupConfig();
-        if (pg != null && pg.getGroupType() != null) {
+        if (pg != null) {
             xml.append("<partition-group enabled=\"").append(pg.isEnabled())
                     .append("\" group-type=\"").append(pg.getGroupType()).append("\" />");
         }
@@ -333,7 +334,7 @@ public class ConfigXmlGenerator {
             try {
                 transformerFactory.setAttribute("indent-number", indent);
             } catch (IllegalArgumentException e) {
-                logger.log(Level.FINEST, "Failed to set indent-number attribute; cause: " + e.getMessage());
+                logger.finest( "Failed to set indent-number attribute; cause: " + e.getMessage());
             }
             Transformer transformer = transformerFactory.newTransformer();
             transformer.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "yes");
@@ -345,12 +346,12 @@ public class ConfigXmlGenerator {
             try {
                 transformer.setOutputProperty("{http://xml.apache.org/xslt}indent-amount", Integer.toString(indent));
             } catch (IllegalArgumentException e) {
-                logger.log(Level.FINEST, "Failed to set indent-amount property; cause: " + e.getMessage());
+                logger.finest( "Failed to set indent-amount property; cause: " + e.getMessage());
             }
             transformer.transform(xmlInput, xmlOutput);
             return xmlOutput.getWriter().toString();
         } catch (Exception e) {
-            logger.log(Level.WARNING, e.getMessage(), e);
+            logger.warning(e);
             return input;
         }
     }

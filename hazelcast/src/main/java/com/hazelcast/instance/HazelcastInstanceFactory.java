@@ -29,7 +29,6 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.logging.Level;
 
 import static com.hazelcast.core.LifecycleEvent.LifecycleState.STARTED;
 
@@ -88,7 +87,6 @@ public final class HazelcastInstanceFactory {
             final HazelcastInstanceImpl hazelcastInstance = new HazelcastInstanceImpl(instanceName, config, nodeContext);
             OutOfMemoryErrorDispatcher.register(hazelcastInstance);
             proxy = new HazelcastInstanceProxy(hazelcastInstance);
-            INSTANCE_MAP.put(instanceName, proxy);
             final Node node = hazelcastInstance.node;
             final Iterator<Member> iter = node.getClusterService().getMembers().iterator();
             final boolean firstMember = (iter.hasNext() && iter.next().localMember());
@@ -107,7 +105,7 @@ public final class HazelcastInstanceFactory {
             final int initialMinClusterSize = node.groupProperties.INITIAL_MIN_CLUSTER_SIZE.getInteger();
             while (node.getClusterService().getSize() < initialMinClusterSize) {
                 try {
-                    hazelcastInstance.logger.log(Level.INFO, "HazelcastInstance waiting for cluster size of " + initialMinClusterSize);
+                    hazelcastInstance.logger.info("HazelcastInstance waiting for cluster size of " + initialMinClusterSize);
                     //noinspection BusyWait
                     Thread.sleep(1000);
                 } catch (InterruptedException ignored) {
@@ -119,9 +117,10 @@ public final class HazelcastInstanceFactory {
                 } else {
                     Thread.sleep(3 * 1000);
                 }
-                hazelcastInstance.logger.log(Level.INFO, "HazelcastInstance starting after waiting for cluster size of "
+                hazelcastInstance.logger.info("HazelcastInstance starting after waiting for cluster size of "
                         + initialMinClusterSize);
             }
+            INSTANCE_MAP.put(instanceName, proxy);
             hazelcastInstance.lifecycleService.fireLifecycleEvent(STARTED);
         } catch (Throwable t) {
             throw ExceptionUtil.rethrow(t);

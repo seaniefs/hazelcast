@@ -51,7 +51,7 @@ import static com.hazelcast.map.MapService.SERVICE_NAME;
 /**
  * @author enesakar 1/17/13
  */
-abstract class MapProxySupport extends AbstractDistributedObject<MapService> {
+abstract class MapProxySupport extends AbstractDistributedObject<MapService> implements InitializingObject {
 
     protected static final String NULL_KEY_IS_NOT_ALLOWED = "Null key is not allowed!";
     protected static final String NULL_VALUE_IS_NOT_ALLOWED = "Null value is not allowed!";
@@ -67,8 +67,11 @@ abstract class MapProxySupport extends AbstractDistributedObject<MapService> {
         mapConfig = service.getMapContainer(name).getMapConfig();
         localMapStats = service.getLocalMapStatsImpl(name);
         lockSupport = new LockProxySupport(new DefaultObjectNamespace(MapService.SERVICE_NAME, name));
+    }
 
-        initializeListeners(nodeEngine);
+    @Override
+    public void initialize() {
+        initializeListeners();
         initializeIndexes();
     }
 
@@ -80,7 +83,8 @@ abstract class MapProxySupport extends AbstractDistributedObject<MapService> {
         }
     }
 
-    private void initializeListeners(NodeEngine nodeEngine) {
+    private void initializeListeners() {
+        final NodeEngine nodeEngine = getNodeEngine();
         List<EntryListenerConfig> listenerConfigs = mapConfig.getEntryListenerConfigs();
         for (EntryListenerConfig listenerConfig : listenerConfigs) {
             EntryListener listener = null;
@@ -117,6 +121,7 @@ abstract class MapProxySupport extends AbstractDistributedObject<MapService> {
                 return cached;
             }
         }
+        NodeEngine nodeEngine = getNodeEngine();
         // todo action for read-backup true is not well tested.
         if (mapConfig.isReadBackupData()) {
             int backupCount = mapConfig.getTotalBackupCount();
@@ -124,7 +129,7 @@ abstract class MapProxySupport extends AbstractDistributedObject<MapService> {
             for (int i = 0; i <= backupCount; i++) {
                 int partitionId = partitionService.getPartitionId(key);
                 PartitionView partition = partitionService.getPartition(partitionId);
-                if (partition.getReplicaAddress(i).equals(getNodeEngine().getThisAddress())) {
+                if (nodeEngine.getThisAddress().equals(partition.getReplicaAddress(i))) {
                     Object val = mapService.getPartitionContainer(partitionId).getRecordStore(name).get(key);
                     if (val != null) {
                         mapService.interceptAfterGet(name, val);
@@ -136,7 +141,6 @@ abstract class MapProxySupport extends AbstractDistributedObject<MapService> {
         GetOperation operation = new GetOperation(name, key);
         Data result = (Data) invokeOperation(key, operation);
         if (nearCacheEnabled) {
-            final NodeEngine nodeEngine = getNodeEngine();
             int partitionId = nodeEngine.getPartitionService().getPartitionId(key);
             if (!nodeEngine.getPartitionService().getPartitionOwner(partitionId).equals(nodeEngine.getClusterService().getThisAddress())) {
                 mapService.putNearCache(name, key, result);

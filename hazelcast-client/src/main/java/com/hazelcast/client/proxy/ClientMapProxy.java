@@ -38,7 +38,6 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.logging.Level;
 
 /**
  * @author mdogan 5/17/13
@@ -573,7 +572,7 @@ public final class ClientMapProxy<K, V> extends ClientProxy implements IMap<K, V
                 } catch (Exception e) {
                     _nearCache = null;
 //                    nearCacheInitialized.set(false);
-                    Logger.getLogger(ClientMapProxy.class).log(Level.SEVERE, "-----------------\n Near Cache is not initialized!!! \n-----------------", e);
+                    Logger.getLogger(ClientMapProxy.class).severe("-----------------\n Near Cache is not initialized!!! \n-----------------", e);
                 }
             }
             nearCache = _nearCache;

@@ -14,16 +14,22 @@
  * limitations under the License.
  */
 
-package com.hazelcast.queue.proxy;
+package com.hazelcast.util;
 
-import com.hazelcast.core.IQueue;
+import static java.lang.String.format;
 
 /**
- * User: ali
- * Date: 11/14/12
- * Time: 12:51 AM
+ * A utility class for validating arguments and state.
  */
-public interface QueueProxy<E> extends IQueue<E> {
+public class ValidationUtil {
 
+    public static <E> E argNotNull(E argument, String argName){
+        if(argument == null){
+           throw new IllegalArgumentException(format("argument '%s' can't be null",argName));
+        }
 
+        return argument;
+    }
+
+    private ValidationUtil(){}
 }

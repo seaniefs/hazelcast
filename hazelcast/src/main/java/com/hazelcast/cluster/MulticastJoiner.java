@@ -16,7 +16,6 @@
 
 package com.hazelcast.cluster;
 
-import com.hazelcast.config.MulticastConfig;
 import com.hazelcast.config.NetworkConfig;
 import com.hazelcast.config.TcpIpConfig;
 import com.hazelcast.instance.Node;
@@ -54,7 +53,7 @@ public class MulticastJoiner extends AbstractJoiner {
             node.setMasterAddress(masterAddressNow);
 
             String msg = "Joining to master node: " + node.getMasterAddress();
-            logger.log(Level.FINEST, msg);
+            logger.finest( msg);
             systemLogService.logJoin(msg);
 
             if (node.getMasterAddress() == null || node.getThisAddress().equals(node.getMasterAddress())) {
@@ -85,7 +84,7 @@ public class MulticastJoiner extends AbstractJoiner {
 
     private void doTCP(AtomicBoolean joined) {
         node.setMasterAddress(null);
-        logger.log(Level.FINEST, "Multicast couldn't find cluster. Trying TCP/IP");
+        logger.finest( "Multicast couldn't find cluster. Trying TCP/IP");
         new TcpIpJoiner(node).join(joined);
     }
 
@@ -115,14 +114,14 @@ public class MulticastJoiner extends AbstractJoiner {
                     Thread.sleep(node.groupProperties.WAIT_SECONDS_BEFORE_JOIN.getInteger() * 1000L * 2);
                 }
                 if (shouldMerge(joinInfo)) {
-                    logger.log(Level.WARNING, node.getThisAddress() + " is merging [multicast] to " + joinInfo.getAddress());
+                    logger.warning(node.getThisAddress() + " is merging [multicast] to " + joinInfo.getAddress());
                     startClusterMerge(joinInfo.getAddress());
                 }
             }
         } catch (InterruptedException ignored) {
         } catch (Exception e) {
             if (logger != null) {
-                logger.log(Level.WARNING, e.getMessage(), e);
+                logger.warning(e);
             }
         } finally {
             node.multicastService.removeMulticastListener(listener);
@@ -139,18 +138,17 @@ public class MulticastJoiner extends AbstractJoiner {
             throw new IllegalArgumentException();
         }
         Connection conn = node.connectionManager.getOrConnect(masterAddress);
-        logger.log(Level.FINEST, "Master connection " + conn);
+        logger.finest( "Master connection " + conn);
         systemLogService.logJoin("Master connection " + conn);
         if (conn != null) {
             return node.clusterService.sendJoinRequest(masterAddress, true);
         } else {
-            logger.log(Level.FINEST, "Connecting to master node: " + masterAddress);
+            logger.finest( "Connecting to master node: " + masterAddress);
             return false;
         }
     }
 
     private final int publishInterval = 100;
-    private final int tryCountCoefficient = 1000 / publishInterval;
 
     private Address findMasterWithMulticast() {
         try {
@@ -167,7 +165,7 @@ public class MulticastJoiner extends AbstractJoiner {
             }
         } catch (final Exception e) {
             if (logger != null) {
-                logger.log(Level.WARNING, e.getMessage(), e);
+                logger.warning(e);
             }
         } finally {
             currentTryCount.set(0);
@@ -178,24 +176,24 @@ public class MulticastJoiner extends AbstractJoiner {
     private int calculateTryCount() {
         final NetworkConfig networkConfig = config.getNetworkConfig();
         int timeoutSeconds = networkConfig.getJoin().getMulticastConfig().getMulticastTimeoutSeconds();
+        int tryCountCoefficient = 1000 / publishInterval;
         int tryCount = timeoutSeconds * tryCountCoefficient;
         String host = node.getThisAddress().getHost();
-        int lastDigits = 0;
+        int lastDigits;
         try {
             lastDigits = Integer.valueOf(host.substring(host.lastIndexOf(".") + 1));
         } catch (NumberFormatException e) {
             lastDigits = (int) (512 * Math.random());
         }
         lastDigits = lastDigits % 100;
-        tryCount += lastDigits + (node.getThisAddress().getPort() - networkConfig.getPort()) * timeoutSeconds * 3;
+        int portDiff = node.getThisAddress().getPort() - networkConfig.getPort();
+        tryCount += lastDigits + portDiff * timeoutSeconds * 3;
         return tryCount;
     }
 
     public void onReceivedJoinRequest(JoinRequest joinRequest) {
-        if (joinRequest.getTryCount() > currentTryCount.get() + 20) {
-            final MulticastConfig multicastConfig = config.getNetworkConfig().getJoin().getMulticastConfig();
-            int tryCount = (multicastConfig.getMulticastTimeoutSeconds() + 4) * tryCountCoefficient;
-            maxTryCount.set(tryCount);
+        if (joinRequest.getUuid().compareTo(node.localMember.getUuid()) < 0) {
+            maxTryCount.incrementAndGet();
         }
     }
 }
