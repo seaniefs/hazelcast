@@ -143,12 +143,12 @@ public class ClientSocketFactoryTest {
  		}
         server = Hazelcast.newHazelcastInstance(config);
     	server.getMap("test").put("two", "two");
-        ClientConfig clientConfig = new XmlClientConfigBuilder(ClientSocketFactoryTest.class.getResourceAsStream(strClientConfig)).build();
+        ClientConfig clientConfig = new XmlClientConfigBuilder(getClass().getClassLoader().getResourceAsStream(strClientConfig)).build();
         hz = HazelcastClient.newHazelcastClient(clientConfig);
 	}
 
 	static void loadCertFromClassPath(KeyStore ks, char[] passPhrase, String keyStoreFile) throws IOException, NoSuchAlgorithmException, CertificateException {
-		final InputStream in = ClientSocketFactoryTest.class.getResourceAsStream(keyStoreFile);
+		final InputStream in = ClientSocketFactoryTest.class.getClassLoader().getResourceAsStream(keyStoreFile);
 		try {
 		    ks.load(in, passPhrase);
 		} finally {
