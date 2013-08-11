@@ -29,6 +29,7 @@ import java.util.Properties;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
 import com.hazelcast.client.HazelcastClient;
@@ -40,11 +41,13 @@ import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.nio.IOUtil;
 import com.hazelcast.nio.ssl.BasicSSLContextFactory;
 import com.hazelcast.test.HazelcastJUnit4ClassRunner;
+import com.hazelcast.test.annotation.SerialTest;
 
 /**
  * @author ali 5/20/13
  */
 @RunWith(HazelcastJUnit4ClassRunner.class)
+@Category(SerialTest.class)
 public class ClientSocketFactoryTest {
 
 	public static class ClassLoadingCertClientSocketFactory extends SSLClientSocketFactory {
@@ -115,8 +118,6 @@ public class ClientSocketFactoryTest {
     	sslConfig.setProperties(properties);
     	String strClientConfig = "hazelcast-client-socketfactory-ssl.xml";
         setupHz(strClientConfig, sslConfig);
-
-        System.out.println("Writing value on client...");
         hz.getMap("test").put("one", "one");
         int attempts = 10;
         Object result = null;
@@ -125,11 +126,9 @@ public class ClientSocketFactoryTest {
         	result = server.getMap("test").get("one");
         	if(result == null) {
             	Thread.sleep(500);
-                System.out.print("Waiting for value on server...");
         	}
         }
         while(result == null && attempts-- > 0);
-        System.out.println();
         assertEquals("Expected correct result!", "one", result);
         
     }
